@@ -71,6 +71,11 @@ records. `bongard tokenize` adds token IDs to a record Parquet, and `bongard val
 labels and split groups. The joint-embedding (JEPA) objectives and the sandbox stage are not
 included. See `bongard/training.py` for every configuration field.
 
+## Benchmarks
+
+`benchmarks/typed_decisions.py` replays the typed-decisions test split against a running server
+and computes the leaderboard metrics.
+
 ## Cite
 
 ```bibtex
