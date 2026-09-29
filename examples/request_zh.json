@@ -1,0 +1,39 @@
+{
+  "state": {
+    "available": 10,
+    "reserved": 0,
+    "operation": {
+      "kind": "reserve",
+      "amount": 3
+    },
+    "rule": "若 available 不小于 amount，将 available 减去 amount，reserved 加上 amount；否则两者不变。"
+  },
+  "questions": {
+    "after": {
+      "type": "noul",
+      "instructions": "按规则执行一次操作后，可用库存是否至少为8？"
+    },
+    "before": {
+      "type": "noul",
+      "instructions": "执行操作前，可用库存是否至少为8？"
+    },
+    "pick": {
+      "type": "choice",
+      "instructions": "按规则执行一次操作后，库存属于哪一项？",
+      "criteria": {
+        "empty": "可用库存为0。",
+        "some": "可用库存大于0且小于8。",
+        "many": "可用库存至少为8。"
+      }
+    },
+    "grade": {
+      "type": "score",
+      "instructions": "按规则执行一次操作后，评价可用库存。",
+      "criteria": [
+        "可用库存为0。",
+        "可用库存大于0且小于8。",
+        "可用库存至少为8。"
+      ]
+    }
+  }
+}

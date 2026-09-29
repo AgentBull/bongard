@@ -1,0 +1,27 @@
+{
+  "state": {
+    "order": {"items": [{"sku": "A-17", "quantity": 3}], "total": 84.0, "currency": "EUR"},
+    "customer": {"tier": "gold", "returns_last_90_days": 0},
+    "message": "The parcel arrived with the box crushed and one item broken. I want a refund."
+  },
+  "questions": {
+    "refund": {
+      "type": "noul",
+      "instructions": "Should the order be refunded under the policy: damaged items are refunded in full when reported within 14 days?"
+    },
+    "route": {
+      "type": "choice",
+      "instructions": "Which team should handle the request?",
+      "criteria": {
+        "billing": "Payments, invoices and refunds that need no inspection.",
+        "logistics": "Lost, late or damaged deliveries.",
+        "sales": "New orders and product questions."
+      }
+    },
+    "urgency": {
+      "type": "score",
+      "instructions": "How urgent is the request?",
+      "criteria": ["Can wait a week.", "Answer within two days.", "Answer today."]
+    }
+  }
+}
