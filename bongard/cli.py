@@ -112,6 +112,12 @@ def main(argv=None):
         if name == "serve":
             cmd.add_argument("--host", default="127.0.0.1")
             cmd.add_argument("--port", type=int, default=8000)
+        if name in ("predict", "serve"):
+            cmd.add_argument("--max-request-tokens", type=int,
+                             help="Raise the request token budget of the checkpoint (e.g. for "
+                                  "hundreds of long candidates)")
+            cmd.add_argument("--max-sequence-tokens", type=int,
+                             help="Raise the per-sequence token budget, up to the model's limit")
         if name in ("evaluate", "calibrate"):
             cmd.add_argument("--data", required=True)
             cmd.add_argument("--output", required=True)
@@ -156,6 +162,12 @@ def main(argv=None):
             state_cache_mib=getattr(args, "state_cache_mib", 0),
             rotations=getattr(args, "rotations", False),
         )
+        compiler = predictor.model.compiler
+        if getattr(args, "max_request_tokens", None):
+            compiler.max_request_tokens = args.max_request_tokens
+        if getattr(args, "max_sequence_tokens", None):
+            limit = compiler.vision_config.text_config.max_position_embeddings
+            compiler.max_sequence_tokens = min(args.max_sequence_tokens, limit)
         if args.command == "predict":
             write_json(args.output, predictor.predict(strict_loads(Path(args.request).read_text())))
         elif args.command == "serve":
