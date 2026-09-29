@@ -3,6 +3,8 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+import torch
+
 from .data import DataError, strict_loads
 from .token_safety import TokenSafetyError
 
@@ -39,7 +41,17 @@ def make_server(predictor, host="127.0.0.1", port=8000):
                     raise DataError("Request must be a JSON object")
                 result = predictor.predict(request)
             except (ValueError, TokenSafetyError, UnicodeDecodeError) as exc:
-                self.respond(400, {"error": {"type": "invalid_request", "message": str(exc)}})
+                if "exceeds token budget" in str(exc):
+                    # A capacity limit, not a malformed request; clients look for these words.
+                    message = f"Request has too many tokens: {exc}"
+                    self.respond(422, {"error": {"type": "capacity", "message": message}})
+                else:
+                    self.respond(400, {"error": {"type": "invalid_request", "message": str(exc)}})
+                return
+            except torch.OutOfMemoryError:
+                torch.cuda.empty_cache()
+                message = "Request has too many tokens for the memory of this device; input was not truncated"
+                self.respond(422, {"error": {"type": "capacity", "message": message}})
                 return
             except Exception:
                 import traceback
