@@ -12,7 +12,6 @@ import torch
 
 from . import __version__
 from .attention import _BACKEND
-from .compiler import entry
 from .data import DataError, finite_json, outcome_keys, validate_question
 from .model import JudgmentModel
 
@@ -332,11 +331,9 @@ class Predictor:
                 for key, value in zip(outcome_keys(questions[name]), p):
                     average[key] += value / len(groups[qid])
             answers[qid] = answer_from_probabilities(q, [average[k] for k in outcome_keys(q)])
-        output_tokens = len(
-            self.model.compiler.tokenizer.encode(entry(answers), add_special_tokens=False)
-        )
+        # The head scores the candidates directly. No token is generated.
         return {
             "model": self.model_id,
             "answers": answers,
-            "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens},
+            "usage": {"input_tokens": input_tokens, "output_tokens": 0},
         }
