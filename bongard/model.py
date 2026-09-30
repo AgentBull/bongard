@@ -23,6 +23,13 @@ from .compiler import COMPILER_VERSION, Compiler, Request
 from .mps_inference import install_mps_inference
 
 
+def checkpoint_config_path(directory):
+    """Resolve the bundle config, including checkpoints exported before the Hub layout."""
+    directory = Path(directory)
+    config = directory / "config.json"
+    return config if config.is_file() else directory / "bundle.json"
+
+
 def device_for(name: str) -> torch.device:
     if name not in {"cpu", "mps", "cuda"}:
         raise ValueError(
@@ -534,12 +541,13 @@ class JudgmentModel(nn.Module):
                 "base": os.path.relpath(self.lora_base, directory.resolve()),
                 "settings": self.lora_settings,
             }
-        (directory / "bundle.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        (directory / "config.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        (directory / "bundle.json").unlink(missing_ok=True)
 
     @classmethod
     def load(cls, directory, *, device="cpu", attention=None, upgrade_compiler=False, dtype=None):
         directory = Path(directory)
-        metadata = json.loads((directory / "bundle.json").read_text())
+        metadata = json.loads(checkpoint_config_path(directory).read_text())
         if dtype is None:
             dtype = getattr(torch, metadata.get("parameter_dtype", "float32"))
         legacy = metadata["format"] == "bongard-v1.2"

@@ -14,6 +14,7 @@ import torch.nn.functional as F
 from .data import DataError, check_split_groups, eligible_views, outcome_keys, validate_record
 from .inference import temperature_for, validate_temperatures
 from .losses import decision_loss
+from .model import checkpoint_config_path
 from .provenance import check_independent_data, checkpoint_sources
 
 
@@ -260,10 +261,12 @@ def model_fingerprint(checkpoint):
     """Bind calibration to the actual exported weights, not a mutable directory name."""
     digest = hashlib.sha256()
     root = Path(checkpoint)
-    metadata = json.loads((root / "bundle.json").read_text())
+    config = checkpoint_config_path(root)
+    metadata = json.loads(config.read_text())
     base = root / metadata["lora"]["base"] if "lora" in metadata else root / "backbone"
     files = [
-        ("bundle.json", root / "bundle.json"),
+        # Keep existing calibration fingerprints valid after the config-file rename.
+        ("bundle.json", config),
         ("backbone/config.json", base / "config.json"),
         ("head.safetensors", root / "head.safetensors"),
         *[(f"backbone/{p.name}", p) for p in sorted(base.glob("*.safetensors"))],

@@ -13,7 +13,7 @@ import torch
 from . import __version__
 from .attention import _BACKEND
 from .data import DataError, finite_json, outcome_keys, validate_question
-from .model import JudgmentModel
+from .model import JudgmentModel, checkpoint_config_path
 
 POSTPROCESS_VERSION = "systemone-local-v1.2"
 
@@ -204,7 +204,7 @@ class Predictor:
             state_cache_mib=state_cache_mib,
             rotations=rotations,
             release_date=datetime.fromtimestamp(
-                (Path(checkpoint) / "bundle.json").stat().st_mtime, timezone.utc
+                checkpoint_config_path(checkpoint).stat().st_mtime, timezone.utc
             )
             .date()
             .isoformat(),
