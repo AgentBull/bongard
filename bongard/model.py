@@ -30,6 +30,34 @@ def checkpoint_config_path(directory):
     return config if config.is_file() else directory / "bundle.json"
 
 
+def save_weights_index(directory, component):
+    """Describe every exported tensor for Hub parameter and dtype discovery."""
+    component_index = directory / component / "model.safetensors.index.json"
+    if component_index.is_file():
+        shards = sorted(set(json.loads(component_index.read_text())["weight_map"].values()))
+    else:
+        shards = ["adapter_model.safetensors" if component == "adapter" else "model.safetensors"]
+    files = [directory / component / name for name in shards]
+    files.append(directory / "head.safetensors")
+    weight_map, total_size = {}, 0
+    for path in files:
+        # Safetensors stores a length-prefixed JSON header before the tensor data.
+        with path.open("rb") as stream:
+            header = json.loads(stream.read(int.from_bytes(stream.read(8), "little")))
+        for name, tensor in header.items():
+            if name == "__metadata__":
+                continue
+            if name in weight_map:
+                raise ValueError(f"Duplicate exported tensor name: {name}")
+            weight_map[name] = path.relative_to(directory).as_posix()
+            start, end = tensor["data_offsets"]
+            total_size += end - start
+    index = {"metadata": {"total_size": total_size}, "weight_map": weight_map}
+    (directory / "model.safetensors.index.json").write_text(
+        json.dumps(index, indent=2, sort_keys=True) + "\n"
+    )
+
+
 def device_for(name: str) -> torch.device:
     if name not in {"cpu", "mps", "cuda"}:
         raise ValueError(
@@ -505,17 +533,25 @@ class JudgmentModel(nn.Module):
 
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
-        self.backbone.save_pretrained(directory / ("adapter" if self.lora_base else "backbone"),
-                                      state_dict=hf_state_dict(self.backbone))
+        component = "adapter" if self.lora_base else "backbone"
+        self.backbone.save_pretrained(
+            directory / component, state_dict=hf_state_dict(self.backbone)
+        )
         self.compiler.tokenizer.save_pretrained(directory / "tokenizer")
         save_file(
             {k: v.detach().cpu().contiguous() for k, v in self.head.state_dict().items()},
             directory / "head.safetensors",
         )
+        save_weights_index(directory, component)
         import transformers
 
+        parameter_dtype = str(next(self.parameters()).dtype).removeprefix("torch.")
         manifest = {
             "format": "bongard-v1.3",
+            "model_type": "bongard",
+            "architectures": [type(self).__name__],
+            "is_encoder_decoder": True,
+            "dtype": parameter_dtype,
             "head_rank": 256,
             "source": self.source,
             "torch": torch.__version__,
@@ -527,7 +563,7 @@ class JudgmentModel(nn.Module):
                 "max_request_tokens": self.compiler.max_request_tokens,
             },
             "attention": self.backbone.config.decoder._attn_implementation,
-            "parameter_dtype": str(next(self.parameters()).dtype).removeprefix("torch."),
+            "parameter_dtype": parameter_dtype,
             # These non-persistent buffers may have been rounded by the original
             # nested checkpoint dtype before master parameters became FP32.
             # Recomputing sqrt(hidden_size) on reload changes the learned path.
