@@ -15,6 +15,7 @@ or judge an agent's next action.
 **Read once. Judge in parallel.**
 
 [Model weights](https://huggingface.co/AgentBull/bongard-mini) ·
+[Paper](https://arxiv.org/abs/2609.39111) ·
 [Live demo](https://huggingface.co/spaces/AgentBull/bongard-mini) ·
 [Quick start](#quick-start) · [Design](#one-reading-many-decisions) ·
 [Results](#results) · [Game recordings](https://huggingface.co/AgentBull/bongard-mini#game-recordings)
@@ -236,10 +237,13 @@ The runtime code uses [Apache-2.0](LICENSE). Model weights are subject to the
 [NOTICE](https://huggingface.co/AgentBull/bongard-mini/blob/main/NOTICE).
 
 ```bibtex
-@techreport{ding2026bongard,
-  title  = {Bongard: Training Machine Intuition},
-  author = {Ding, Li and Jin, Haidi and Ji, Chen},
-  institution = {AgentBull Pte Ltd},
-  year   = {2026}
+@misc{ding2026bongard,
+  title        = {Bongard: Training Machine Intuition},
+  author       = {Ding, Li and Jin, Haidi and Ji, Chen},
+  year         = {2026},
+  eprint       = {2609.39111},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.CL},
+  url          = {https://arxiv.org/abs/2609.39111}
 }
 ```
